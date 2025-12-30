@@ -1,0 +1,18 @@
+STUDENT ACTIVITY REPORT
+
+S101 | Asha | Logins: 2 | Submissions: 1
+S102 | Ravi | Logins: 1 | Submissions: 1
+S103 | Priya | Logins: 2 | Submissions: 0
+
+Abnormal Behavior:
+S101 has 1 extra LOGIN(s)
+S102 has 1 extra LOGIN(s)
+S103 has 1 extra LOGIN(s)
+
+Daily Activity Statistics:
+2025-03-10 - LOGIN: 2
+2025-03-10 - LOGOUT: 1
+2025-03-10 - SUBMIT_ASSIGNMENT: 1
+2025-03-11 - LOGIN: 3
+2025-03-11 - SUBMIT_ASSIGNMENT: 1
+2025-03-11 - LOGOUT: 1
