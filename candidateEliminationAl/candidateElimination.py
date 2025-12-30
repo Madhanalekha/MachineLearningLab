@@ -1,78 +1,99 @@
-# Candidate Elimination Algorithm
+# ---------------- CANDIDATE ELIMINATION ALGORITHM ----------------
 
-def candidate_elimination(training_data):
+class CandidateElimination:
+    def __init__(self, domains):
+        self.domains = domains
+        self.n = len(domains)
 
-    num_attributes = len(training_data[0]) - 1
+        # Most specific hypothesis
+        self.S = ['Φ'] * self.n
 
-    S = ['0'] * num_attributes
-    G = [['?'] * num_attributes]
+        # Most general hypotheses
+        self.G = [['?'] * self.n]
 
-    for example in training_data:
-        if example[-1] == 'Yes':
-            S = example[:-1]
-            break
+    def is_consistent(self, h, x):
+        return all(h[i] == '?' or h[i] == x[i] for i in range(self.n))
 
-    print("Initial S:", S)
-    print("Initial G:", G)
+    def more_general(self, h1, h2):
+        return all(h1[i] == '?' or h1[i] == h2[i] for i in range(self.n))
 
-    for example in training_data:
-        attributes = example[:-1]
-        label = example[-1]
+    # ---------------- GENERALIZE S ----------------
+    def generalize_S(self, x):
+        for i in range(self.n):
+            if self.S[i] == 'Φ':
+                self.S[i] = x[i]
+            elif self.S[i] != x[i]:
+                self.S[i] = '?'
 
-        # POSITIVE EXAMPLE
-        if label == 'Yes':
-            for i in range(num_attributes):
-                if attributes[i] != S[i]:
-                    S[i] = '?'
+    # ---------------- SPECIALIZE G ----------------
+    def specialize_G(self, x):
+        new_G = []
 
-            # Remove hypotheses from G that do not cover the example
-            G = [g for g in G if is_consistent(g, attributes)]
+        for g in self.G:
+            if self.is_consistent(g, x):  # g covers negative example
+                for i in range(self.n):
+                    if g[i] == '?':
+                        for value in self.domains[i]:
+                            if value != x[i]:
+                                h = g.copy()
+                                h[i] = value
+                                if self.more_general(h, self.S):
+                                    new_G.append(h)
+            else:
+                new_G.append(g)
 
-        # NEGATIVE EXAMPLE
-        else:
-            new_G = []
-            for g in G:
-                if is_consistent(g, attributes):
-                    specializations = specialize(g, S, attributes)
-                    new_G.extend(specializations)
-                else:
-                    new_G.append(g)
-            G = new_G
+        self.G = new_G
 
-        print("\nAfter example:", example)
-        print("S:", S)
-        print("G:", G)
+    # ---------------- PRUNE G ----------------
+    def prune_G(self):
+        self.G = [
+            g for g in self.G
+            if not any(self.more_general(g2, g) and g2 != g for g2 in self.G)
+        ]
 
-    return S, G
+    # ---------------- UPDATE ----------------
+    def update(self, x, label):
+        if label == 'Yes':  # Positive example
+            self.G = [g for g in self.G if self.is_consistent(g, x)]
+            self.generalize_S(x)
+        else:  # Negative example
+            self.specialize_G(x)
+
+        self.prune_G()
+
+    def display(self, step):
+        print(f"\nAfter Example {step}")
+        print("S =", self.S)
+        print("G =", self.G)
 
 
-def is_consistent(hypothesis, instance):
-    for h, i in zip(hypothesis, instance):
-        if h != '?' and h != i:
-            return False
-    return True
+# ---------------- MAIN PROGRAM ----------------
 
-
-def specialize(hypothesis, S, instance):
-    specializations = []
-    for i in range(len(hypothesis)):
-        if hypothesis[i] == '?':
-            if S[i] != instance[i]:
-                new_h = hypothesis.copy()
-                new_h[i] = S[i]
-                specializations.append(new_h)
-    return specializations
-
-training_data = [
-    ['Technical', 'Senior', 'Excellent', 'Good', 'Urban', 'Yes'],
-    ['Technical', 'Junior', 'Excellent', 'Good', 'Urban', 'Yes'],
-    ['Non Technical', 'Junior', 'Average', 'Poor', 'Rural', 'No'],
-    ['Technical', 'Senior', 'Average', 'Good', 'Rural', 'No'],
-    ['Technical', 'Senior', 'Excellent', 'Good', 'Rural', 'Yes']
-  
+data = [
+    (['Technical','Senior','Excellent','Good','Urban'], 'Yes'),
+    (['Technical','Junior','Excellent','Good','Urban'], 'Yes'),
+    (['Non-Technical','Junior','Average','Poor','Rural'], 'No'),
+    (['Technical','Senior','Average','Good','Rural'], 'No'),
+    (['Technical','Senior','Excellent','Good','Rural'], 'Yes')
 ]
 
-S_final, G_final = candidate_elimination(training_data)
+domains = [
+    ['Technical', 'Non-Technical'],
+    ['Junior', 'Senior'],
+    ['Average', 'Excellent'],
+    ['Poor', 'Good'],
+    ['Urban', 'Rural']
+]
 
-print("\nFinal Specific Hypothesis:", S_final)
-print("Final General Hypotheses:", G_final)
+ce = CandidateElimination(domains)
+
+step = 1
+for x, label in data:
+    print(f"\nProcessing Example {step}: {x} -> {label}")
+    ce.update(x, label)
+    ce.display(step)
+    step += 1
+
+print("\nFINAL RESULT")
+print("Final S:", ce.S)
+print("Final G:", ce.G)
