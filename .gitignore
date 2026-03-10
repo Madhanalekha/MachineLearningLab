@@ -1,0 +1,33 @@
+# Data files
+*.csv
+*.joblib
+
+# ML model files
+*.h5
+*.keras
+*.pkl
+*.pickle
+*.pt
+*.pth
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# Large dataset folders
+9-Facial Recognization/faceDataset/
+9-Facial Recognization/face Recognization/Faces/
+dataset/
+new_folder/dataset/
+
+# Temp / generated folders
+new_folder/
+
+# OS files
+.DS_Store
+Thumbs.db

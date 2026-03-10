@@ -48,15 +48,15 @@ def load_data():
 # Train and cache the model
 # -------------------------------
 @st.cache_resource
-def train_model(df, target_col):
-    df = df.dropna()
+def train_model(_df, target_col):
+    _df = _df.dropna()
     
-    if df[target_col].dtype == "object":
+    if _df[target_col].dtype == "object":
         le = LabelEncoder()
-        df[target_col] = le.fit_transform(df[target_col])
+        _df[target_col] = le.fit_transform(_df[target_col])
 
-    X = df.drop(target_col, axis=1)
-    y = df[target_col]
+    X = _df.drop(target_col, axis=1)
+    y = _df[target_col]
 
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
@@ -103,7 +103,12 @@ else:
 # Train model once and cache it
 model, scaler, X, y, X_test, y_test, y_pred, y_prob, accuracy, roc = train_model(df, target_col)
 
-# ========== SECTION 1: Dataset Overview ==========
+# ========================================
+# 1. DATA PREPROCESSING
+# ========================================
+st.header("📂 1. Data Preprocessing")
+
+# Dataset Overview
 with st.container():
     st.divider()
     st.subheader("📊 Dataset Overview")
@@ -119,7 +124,7 @@ with st.container():
         st.metric("Total Rows", df.shape[0])
         st.metric("Features", df.shape[1])
 
-# ========== SECTION 2: Class Distribution ==========
+# Class Distribution
 with st.container():
     st.divider()
     st.subheader("📈 Class Distribution")
@@ -131,7 +136,7 @@ with st.container():
     ax.set_title("Class Distribution", fontsize=9, fontweight='bold')
     st.pyplot(fig)
 
-# ========== SECTION 3: Data Preprocessing ==========
+# Preprocessing Summary
 with st.container():
     st.divider()
     st.subheader("⚙️ Data Preprocessing")
@@ -142,7 +147,12 @@ with st.container():
     col_proc3.write("✓ Scaled with StandardScaler")
     col_proc4.write("✓ Train-Test: 80-20")
 
-# ========== SECTION 4: SMOTE & Model Training ==========
+# ========================================
+# 2. MODEL BUILDING
+# ========================================
+st.header("🤖 2. Model Building")
+
+# Model Training
 with st.container():
     st.divider()
     st.subheader("🤖 Model Training - XGBoost")
@@ -150,7 +160,12 @@ with st.container():
     st.write("✓ SMOTE applied to balance dataset")
     st.success("✅ XGBoost Model Trained Successfully")
 
-# ========== SECTION 5: Model Evaluation ==========
+# ========================================
+# 3. MODEL EVALUATION
+# ========================================
+st.header("📊 3. Model Evaluation")
+
+# Model Evaluation
 with st.container():
     st.divider()
     st.subheader("📊 Model Evaluation")
@@ -179,7 +194,7 @@ with st.container():
         ax2.set_title("Confusion Matrix", fontsize=9, fontweight='bold')
         st.pyplot(fig2)
 
-# ========== SECTION 6: Feature Importance ==========
+# Feature Importance
 with st.container():
     st.divider()
     st.subheader("⭐ Feature Importance")
@@ -196,7 +211,12 @@ with st.container():
     ax3.tick_params(axis='x', labelsize=7)
     st.pyplot(fig3)
 
-# ========== SECTION 7: Manual Prediction ==========
+# ========================================
+# 4. PREDICTION
+# ========================================
+st.header("🔮 4. Prediction")
+
+# Manual Prediction
 with st.container():
     st.divider()
     st.subheader("🔮 Manual Transaction Prediction")

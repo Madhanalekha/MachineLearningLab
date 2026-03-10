@@ -16,9 +16,13 @@ st.set_page_config(page_title="Credit Card Fraud Detection", layout="wide")
 
 st.title("💳 Credit Card Fraud Detection - LOF Model")
 
-# =========================
+# ========================================
+# 1. DATA PREPROCESSING
+# ========================================
+
+st.header("📂 1. Data Preprocessing")
+
 # Load Dataset
-# =========================
 @st.cache_data
 def load_data():
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -40,15 +44,15 @@ def load_data():
 # Train and cache the model
 # =========================
 @st.cache_resource
-def train_model(df, target_col):
-    df = df.dropna()
+def train_model(_df, target_col):
+    _df = _df.dropna()
     
-    if df[target_col].dtype == "object":
+    if _df[target_col].dtype == "object":
         le = LabelEncoder()
-        df[target_col] = le.fit_transform(df[target_col])
+        _df[target_col] = le.fit_transform(_df[target_col])
     
-    X = df.drop(target_col, axis=1)
-    y = df[target_col]
+    X = _df.drop(target_col, axis=1)
+    y = _df[target_col]
     
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
@@ -98,6 +102,105 @@ else:
 # Train model once and cache it
 lof_model, scaler, X, y, X_test, y_test, y_pred, lof_scores, accuracy, roc = train_model(df, target_col)
 
+# Display Dataset Info
+st.subheader("📊 Dataset Overview")
+
+col1, col2 = st.columns(2)
+with col1:
+    st.write("**Dataset Preview (First 5 Rows)**")
+    st.dataframe(df.head())
+with col2:
+    st.write("**Dataset Information**")
+    st.write(f"Shape: {df.shape}")
+    st.write(f"Total Records: {len(df):,}")
+    st.write(f"Total Features: {len(df.columns)}")
+   
+st.success("✅ Data loaded and preprocessed successfully!")
+
+st.divider()
+
+# ========================================
+# 2. MODEL BUILDING
+# ========================================
+
+st.header("🤖 2. Model Building")
+
+st.subheader("🚀 Local Outlier Factor (LOF) Configuration")
+
+st.info("**Model Parameters:**\n- Algorithm: Local Outlier Factor\n- Neighbors: 20\n- Contamination: 0.01\n- Mode: Novelty Detection")
+
+st.success("✅ LOF Model trained successfully!")
+
+st.write(f"**Training Details:**")
+metric_train_col1, metric_train_col2, metric_train_col3 = st.columns(3)
+with metric_train_col1:
+    st.metric("Training Samples", f"{len(X_test)*4:,}")
+with metric_train_col2:
+    st.metric("Test Samples", f"{len(X_test):,}")
+with metric_train_col3:
+    st.metric("Features Used", len(X.columns))
+
+st.divider()
+
+# ========================================
+# 3. MODEL EVALUATION
+# ========================================
+
+st.header("📊 3. Model Evaluation")
+
+st.subheader("🎯 Performance Metrics")
+
+metric_col1, metric_col2, metric_col3 = st.columns(3)
+with metric_col1:
+    st.metric("Accuracy", f"{accuracy:.4f}")
+with metric_col2:
+    st.metric("ROC-AUC Score", f"{roc:.4f}")
+with metric_col3:
+    # Calculate precision from confusion matrix
+    cm_temp = confusion_matrix(y_test, y_pred)
+    if cm_temp[1, 1] + cm_temp[0, 1] > 0:
+        precision = cm_temp[1, 1] / (cm_temp[1, 1] + cm_temp[0, 1])
+    else:
+        precision = 0
+    st.metric("Precision", f"{precision:.4f}")
+
+# Classification Report
+st.subheader("📋 Classification Report")
+st.text(classification_report(y_test, y_pred))
+
+# Confusion Matrix
+st.subheader("🔢 Confusion Matrix")
+cm = confusion_matrix(y_test, y_pred)
+
+fig, ax = plt.subplots(figsize=(6, 5))
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax, cbar_kws={'label': 'Count'})
+ax.set_xlabel("Predicted Label")
+ax.set_ylabel("Actual Label")
+ax.set_title("Confusion Matrix")
+st.pyplot(fig)
+
+# ROC Curve
+st.subheader("📈 ROC Curve")
+fpr, tpr, _ = roc_curve(y_test, -lof_scores)
+
+fig_roc, ax_roc = plt.subplots(figsize=(6, 5))
+ax_roc.plot(fpr, tpr, color='steelblue', lw=2, label=f'ROC Curve (AUC = {round(roc, 4)})')
+ax_roc.plot([0, 1], [0, 1], color='gray', lw=1, linestyle='--', label='Random')
+ax_roc.set_xlabel("False Positive Rate")
+ax_roc.set_ylabel("True Positive Rate")
+ax_roc.set_title("ROC Curve")
+ax_roc.legend(loc="lower right")
+ax_roc.grid(True, alpha=0.3)
+st.pyplot(fig_roc)
+
+st.divider()
+
+# ========================================
+# 4. PREDICTION
+# ========================================
+
+st.header("🔮 4. Prediction for Transactions")
+
 # Get binary features
 binary_features = []
 for col in X.columns:
@@ -115,65 +218,9 @@ feature_descriptions = {
     "online_order": "Is the transaction an online order.",
 }
 
-# Display Dataset Info
-st.subheader("Dataset Overview")
-col1, col2 = st.columns(2)
-with col1:
-    st.write("### First 5 Rows")
-    st.dataframe(df.head())
-with col2:
-    st.write("### Dataset Shape")
-    st.write(df.shape)
-
-st.write("## 🚀 Train LOF Model")
-
-st.success("Model Trained Successfully!")
-
-# =========================
-# Model Evaluation
-# =========================
-st.write("## 📊 Model Evaluation")
-
-st.write("### Accuracy:", round(accuracy, 4))
-
-st.write("### Classification Report")
-st.text(classification_report(y_test, y_pred))
-
-# Confusion Matrix
-st.write("### Confusion Matrix")
-cm = confusion_matrix(y_test, y_pred)
-
-fig, ax = plt.subplots(figsize=(8, 6))
-sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax)
-ax.set_xlabel("Predicted")
-ax.set_ylabel("Actual")
-st.pyplot(fig)
-
-# ROC-AUC
-st.write("### ROC-AUC Score:", round(roc, 4))
-
-# ROC Curve
-st.write("### ROC Curve")
-fpr, tpr, _ = roc_curve(y_test, -lof_scores)
-
-fig_roc, ax_roc = plt.subplots(figsize=(6, 5))
-ax_roc.plot(fpr, tpr, color='steelblue', lw=2, label=f'ROC Curve (AUC = {round(roc, 4)})')
-ax_roc.plot([0, 1], [0, 1], color='gray', lw=1, linestyle='--', label='Random')
-ax_roc.set_xlabel("False Positive Rate")
-ax_roc.set_ylabel("True Positive Rate")
-ax_roc.set_title("ROC Curve")
-ax_roc.legend(loc="lower right")
-ax_roc.grid(True, alpha=0.3)
-st.pyplot(fig_roc)
-
-# =========================
-# Manual Prediction Section
-# =========================
-st.subheader("Manual Transaction Prediction")
-
 try:
     with st.container():
-        st.subheader("Predict Using Existing Transaction Index")
+        st.subheader("🔍 Predict Using Existing Transaction Index")
         st.caption(f"Valid index range: 0 to {len(X) - 1}")
 
         index_value = st.number_input(
@@ -201,8 +248,8 @@ try:
                 st.write("Risk Score:", round(float(risk_score_idx), 4))
 
     with st.container():
-        st.subheader("Predict for New Transaction")
-        with st.expander("Feature descriptions", expanded=False):
+        st.subheader("✍️ Predict for New Transaction")
+        with st.expander("📋 Feature Descriptions", expanded=False):
             for col in X.columns:
                 if col in feature_descriptions:
                     st.write(f"- **{col}**: {feature_descriptions[col]}")

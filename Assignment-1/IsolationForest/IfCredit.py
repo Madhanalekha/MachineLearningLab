@@ -12,9 +12,13 @@ from sklearn.metrics import classification_report, confusion_matrix, accuracy_sc
 
 st.title("🔍 Credit Card Fraud Detection - Isolation Forest")
 
-# =========================
+# ========================================
+# 1. DATA PREPROCESSING
+# ========================================
+
+st.header("📂 1. Data Preprocessing")
+
 # Load Dataset
-# =========================
 @st.cache_data
 def load_data():
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -30,17 +34,17 @@ def load_data():
 # Train and cache the model
 # =========================
 @st.cache_resource
-def train_model(df, contamination_value):
+def train_model(_df, contamination_value):
     # Determine target column
-    if "Class" in df.columns:
+    if "Class" in _df.columns:
         target_col = "Class"
-    elif "fraud" in df.columns:
+    elif "fraud" in _df.columns:
         target_col = "fraud"
     else:
-        target_col = df.columns[-1]
+        target_col = _df.columns[-1]
     
-    X = df.drop(target_col, axis=1)
-    y = df[target_col]
+    X = _df.drop(target_col, axis=1)
+    y = _df[target_col]
     
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42, stratify=y
@@ -71,20 +75,26 @@ def train_model(df, contamination_value):
 
 df = load_data()
 
-st.write("### Dataset Preview")
+st.subheader("📊 Dataset Preview")
 st.dataframe(df.head())
 
-# =========================
-# Data Preparation
-# =========================
-st.write("## ⚙️ Data Preparation")
+st.subheader("📈 Dataset Information")
+col1, col2 = st.columns(2)
+with col1:
+    st.metric("Total Records", len(df))
+with col2:
+    st.metric("Total Features", len(df.columns))
 
-st.success("Data scaled successfully!")
 
-# =========================
-# Train Isolation Forest
-# =========================
-st.write("## 🚀 Train Isolation Forest Model")
+st.success("✅ Data loaded and preprocessed successfully!")
+
+st.divider()
+
+# ========================================
+# 2. MODEL BUILDING
+# ========================================
+
+st.header("🤖 2. Model Building")
 
 contamination_value = st.slider(
     "Select Contamination (Fraud Percentage)",
@@ -97,56 +107,74 @@ contamination_value = st.slider(
 # Train model with cached function
 iso_model, scaler, X, y, X_test, y_test, y_pred, anomaly_scores, accuracy, roc_score = train_model(df, contamination_value)
 
-st.success("Model trained successfully!")
+st.success("✅ Model trained successfully!")
 
-# =========================
-# Evaluation
-# =========================
-st.write("## 📊 Model Evaluation")
+st.info(f"**Model Configuration:**\n- Estimators: 100\n- Contamination: {contamination_value}\n- Random State: 42")
 
-st.write("### Accuracy")
-st.write(round(accuracy, 4))
+st.divider()
+
+# ========================================
+# 3. MODEL EVALUATION
+# ========================================
+
+st.header("📊 3. Model Evaluation")
+
+st.subheader("🎯 Performance Metrics")
+
+metric_col1, metric_col2, metric_col3 = st.columns(3)
+with metric_col1:
+    st.metric("Accuracy", f"{accuracy:.4f}")
+with metric_col2:
+    st.metric("ROC-AUC Score", f"{roc_score:.4f}")
+with metric_col3:
+    # Calculate precision from confusion matrix
+    cm_temp = confusion_matrix(y_test, y_pred)
+    if cm_temp[1, 1] + cm_temp[0, 1] > 0:
+        precision = cm_temp[1, 1] / (cm_temp[1, 1] + cm_temp[0, 1])
+    else:
+        precision = 0
+    st.metric("Precision", f"{precision:.4f}")
 
 # Classification Report
-st.write("### Classification Report")
+st.subheader("📋 Classification Report")
 st.text(classification_report(y_test, y_pred))
 
-# =========================
 # Confusion Matrix
-# =========================
-st.write("### Confusion Matrix")
+st.subheader("🔢 Confusion Matrix")
 
 cm = confusion_matrix(y_test, y_pred)
 
-fig, ax = plt.subplots(figsize=(5, 5))
-sns.heatmap(cm, annot=True, fmt='d', cmap='Reds', ax=ax)
-ax.set_xlabel("Predicted")
-ax.set_ylabel("Actual")
+fig, ax = plt.subplots(figsize=(6, 5))
+sns.heatmap(cm, annot=True, fmt='d', cmap='Reds', ax=ax, cbar_kws={'label': 'Count'})
+ax.set_xlabel("Predicted Label")
+ax.set_ylabel("Actual Label")
+ax.set_title("Confusion Matrix")
 st.pyplot(fig)
 
-# =========================
 # ROC Curve
-# =========================
-st.write("### ROC Curve")
+st.subheader("📈 ROC Curve")
 
 fpr, tpr, _ = roc_curve(y_test, -anomaly_scores)
 
-fig2, ax2 = plt.subplots(figsize=(5, 5))
-ax2.plot(fpr, tpr)
-ax2.plot([0, 1], [0, 1])
+fig2, ax2 = plt.subplots(figsize=(6, 5))
+ax2.plot(fpr, tpr, label=f'ROC Curve (AUC = {roc_score:.4f})', linewidth=2)
+ax2.plot([0, 1], [0, 1], 'k--', label='Random Classifier', linewidth=1)
 ax2.set_xlabel("False Positive Rate")
 ax2.set_ylabel("True Positive Rate")
+ax2.set_title("ROC Curve")
+ax2.legend()
+ax2.grid(True, alpha=0.3)
 st.pyplot(fig2)
 
-st.write("### ROC-AUC Score")
-st.write(round(roc_score, 4))
+st.divider()
 
-# =========================
-# Manual Prediction Section
-# =========================
-st.write("## 🔮 Predict for New Transaction")
+# ========================================
+# 4. PREDICTION
+# ========================================
 
-st.write("Enter transaction details to predict if it's fraudulent:")
+st.header("🔮 4. Prediction for New Transaction")
+
+st.write("Enter transaction details below to predict if it's fraudulent or legitimate:")
 
 # Feature descriptions
 feature_descriptions = {
