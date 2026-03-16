@@ -23,10 +23,9 @@ __pycache__/
 9-Facial Recognization/faceDataset/
 9-Facial Recognization/face Recognization/Faces/
 dataset/
-new_folder/dataset/
 
-# Temp / generated folders
-new_folder/
+
+
 
 # OS files
 .DS_Store
